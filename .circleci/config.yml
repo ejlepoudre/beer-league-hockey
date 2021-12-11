@@ -82,12 +82,6 @@ jobs:
           paths:
             - "tf-*"
 
-      # - discord/status:
-      #     fail_only: true
-      #     failure_message: "Application: **$CIRCLE_JOB** job has failed!"
-      #     webhook: "${DISCORD_STATUS_WEBHOOK}"
-      #     mentions: "@employees"
-
   deploy-application:
     docker:
       - image: mcr.microsoft.com/azure-cli:latest
