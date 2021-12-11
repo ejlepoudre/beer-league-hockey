@@ -1,24 +1,190 @@
 version: 2.1
-orbs:
-  heroku: circleci/heroku@1.2.6
-  windows: circleci/windows@2.4.1
+
 jobs:
-  build:
-    description: Build application with Release configuration
-    executor:
-      name: windows/default
+  build-application:
+    docker:
+      - image: mcr.microsoft.com/dotnet/sdk:5.0-buster-slim
+    environment:
+      VERSION_NUMBER: 0.0.0.<< pipeline.number >>
+      JEST_JUNIT_OUTPUT_DIR: "../../../reports/"
+      JEST_JUNIT_OUTPUT_NAME: "frontend.xml"
+      JEST_JUNIT_ANCESTOR_SEPARATOR: " > "
+      JEST_JUNIT_SUITE_NAME: "{filename}"
+      JEST_JUNIT_CLASSNAME: "{classname}"
+      JEST_JUNIT_TITLE: "{classname} > {title}"
     steps:
       - checkout
-      - restore_cache:
-          keys:
-            - dotnet-packages-v1-{{ checksum "BeerLeagueHockey.csproj" }}
       - run:
-          name: "Install project dependencies"
-          command: dotnet.exe restore
+          name: Install Build/System Dependencies
+          command: |
+            apt-get update -yq \
+              && apt-get install curl gnupg -yq \
+              && curl -sL https://deb.nodesource.com/setup_14.x | bash \
+              && apt-get install nodejs -yq
+            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+            echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+            apt update && apt install yarn -yq
+            apt install zip -yq
+
       - run:
-          name: "Build Application according to some given configuration"
-          command: dotnet.exe build --configuration Release
+          name: Build for Release
+          command: |
+            dotnet publish ./BeerLeagueHockey.csproj -c Release /property:Version=$VERSION_NUMBER -o ../app-publish --runtime win-x64
+            cd ../app-publish
+            zip -r ../app-publish.zip *
+            cd ../app-migrate
+
+      - persist_to_workspace: # store the built files into the workspace for other jobs.
+          root: ./
+          paths:
+            - app-publish.zip
+            - app-migrate
+
+  terraform-plan:
+    docker:
+      - image: zenika/terraform-azure-cli:latest
+    steps:
+      - checkout
+      - run:
+          name: prepare terraform env vars
+          command: |
+            echo 'export ARM_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID}"' >> $BASH_ENV
+            echo 'export ARM_TENANT_ID="${AZURE_TENANT}"' >> $BASH_ENV
+            echo 'export ARM_CLIENT_ID="${AZURE_SP_APPID}"' >> $BASH_ENV
+            echo 'export ARM_CLIENT_SECRET="${AZURE_SP_PASSWORD}"' >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: terraform plan
+          command: |
+            cd infrastructure
+            terraform init
+            terraform plan -out=tfplan -var "sql-login=${SQL_ADMIN_LOGIN}" -var "sql-password=${SQL_ADMIN_PASSWORD}" -var "sql-threat-email=${SQL_THREAT_EMAIL}"
+            terraform show tfplan 
+            echo "Checking status to continue..."
+            count=$(terraform show tfplan | grep -c "Your infrastructure matches the configuration") || true
+            if [ $count -gt 0 ]; then 
+              echo "No changes, infrastructure is up to date";
+            else 
+              echo "apply start"
+              terraform apply "tfplan"  
+              echo "apply end"
+            fi
+
+            echo $(terraform output resource_group_name) > ../tf-resource_group_name
+            echo $(terraform output app_name) > ../tf-app_name
+            echo $(terraform output app_staging_url) > ../tf-app_staging_url
+            echo $(terraform output db_server_name) > ../tf-db_server_name
+            echo $(terraform output db_database_name) > ../tf-db_database_name
+
+      - persist_to_workspace: # store the built files into the workspace for other jobs.
+          root: ./
+          paths:
+            - "tf-*"
+
+  deploy-application:
+    docker:
+      - image: mcr.microsoft.com/azure-cli:latest
+    environment:
+      VERSION_NUMBER: 0.0.0.<< pipeline.number >>
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+
+      - run:
+          name: import terraform outputs
+          command: |
+            cd /tmp/workspace
+            resource_group_name=$(cat tf-resource_group_name)
+            app_name=$(cat tf-app_name)
+            app_staging_url=$(cat tf-app_staging_url)
+            db_server_name=$(cat tf-db_server_name)
+            db_database_name=$(cat tf-db_database_name)
+            echo "export AZURE_RG_NAME=$resource_group_name" >> $BASH_ENV
+            echo "export AZURE_APP_NAME=$app_name" >> $BASH_ENV
+            echo "export AZURE_APP_STAGING_URL=$app_staging_url" >> $BASH_ENV
+            echo "export DB_SERVER_NAME=$db_server_name" >> $BASH_ENV
+            echo "export DB_DATABASE_NAME=$db_database_name" >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: Install Dependencies
+          command: |
+            # dependencies to run dotnet db migration tool
+            apk add libc6-compat
+            ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
+            # dependencies for monitoring health checkout
+            apk add nodejs
+
+      - run:
+          name: Capture public IP
+          command: |
+            public_ip=$(curl -s https://api.ipify.org)
+            echo "export PUBLIC_IP=$public_ip" >> $BASH_ENV
+            source $BASH_ENV
+
+      - run:
+          name: Azure Staging Deploy
+          command: |
+            cd /tmp/workspace
+            ls -l
+
+            # Deploy to staging slot
+            az login --service-principal -u ${AZURE_SP_NAME} -p ${AZURE_SP_PASSWORD} --tenant ${AZURE_TENANT}
+            echo "az webapp deployment source config-zip -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --src app-publish.zip"
+            az webapp deployment source config-zip -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --src app-publish.zip
+            echo "az webapp start -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging"
+            az webapp start -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging
+
+            # TEMP - add/update configs - this should be handled by a config mgmt service or re-usable script tied to config mgmt
+            app_conn_string="Server=tcp:${DB_SERVER_NAME}.database.windows.net,1433;Initial Catalog=${DB_DATABASE_NAME};Persist Security Info=False;User ID=${SQL_APP_NAME};Password=${SQL_APP_PASSWORD};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+            az webapp config connection-string set -t SQLAzure -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --settings Database="${app_conn_string}"
+
+      - run:
+          name: Database Migration
+          command: |
+            echo "Adding firewall rule for: ${PUBLIC_IP}"
+            az login --service-principal -u ${AZURE_SP_NAME} -p ${AZURE_SP_PASSWORD} --tenant ${AZURE_TENANT}
+            az sql server firewall-rule create --subscription ${AZURE_SUBSCRIPTION_ID} -s ${DB_SERVER_NAME} -g ${AZURE_RG_NAME} -n CircleCI-Job-$CIRCLE_JOB --start-ip-address $PUBLIC_IP --end-ip-address $PUBLIC_IP
+            dotnet ef database update
+
+      - run:
+          name: Database Migration - Firewall Cleanup
+          command: |
+            echo "Removing firewall rule for: ${PUBLIC_IP}"
+            az login --service-principal -u ${AZURE_SP_NAME} -p ${AZURE_SP_PASSWORD} --tenant ${AZURE_TENANT}
+            az sql server firewall-rule delete --subscription ${AZURE_SUBSCRIPTION_ID} -s ${DB_SERVER_NAME} -g ${AZURE_RG_NAME} -n CircleCI-Job-$CIRCLE_JOB
+          when: always
+
+      - run:
+          name: Azure Production Swap
+          command: |
+            # Swap into production
+            echo "Performing swap..."
+            az login --service-principal -u ${AZURE_SP_NAME} -p ${AZURE_SP_PASSWORD} --tenant ${AZURE_TENANT}
+            az webapp deployment slot swap -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --target-slot production
+            echo "Swap complete."
+
+      - run:
+          name: Shutdown staging slot
+          command: |
+            # Shutdown old version
+            echo "Shutting down old version..."
+            az webapp stop -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging
+          when: always
+
 workflows:
-  heroku_deploy:
+  build_and_deploy:
     jobs:
-      - heroku/deploy-via-git
+      - build-application
+      - terraform-plan:
+          filters:
+            branches:
+              only: main
+      - deploy-application:
+          requires:
+            - build-application
+            - terraform-plan
+          filters:
+            branches:
+              only: main
