@@ -6,12 +6,7 @@ jobs:
       - image: mcr.microsoft.com/dotnet/sdk:5.0-buster-slim
     environment:
       VERSION_NUMBER: 0.0.0.<< pipeline.number >>
-      JEST_JUNIT_OUTPUT_DIR: "../../../reports/"
-      JEST_JUNIT_OUTPUT_NAME: "frontend.xml"
-      JEST_JUNIT_ANCESTOR_SEPARATOR: " > "
-      JEST_JUNIT_SUITE_NAME: "{filename}"
-      JEST_JUNIT_CLASSNAME: "{classname}"
-      JEST_JUNIT_TITLE: "{classname} > {title}"
+
     steps:
       - checkout
       - run:
@@ -29,9 +24,12 @@ jobs:
       - run:
           name: Build for Release
           command: |
-            dotnet publish ./BeerLeagueHockey.csproj -c Release /property:Version=$VERSION_NUMBER -o ../app-publish --runtime win-x64
+            dotnet publish ./BeerLeagueHockey.csproj -c Release /property:Version=2.0 -o ../app-publish --runtime win-x64
             cd ../app-publish
             zip -r ../app-publish.zip *
+            dir
+            cd ..
+            dir
 
       - persist_to_workspace: # store the built files into the workspace for other jobs.
           root: ./
