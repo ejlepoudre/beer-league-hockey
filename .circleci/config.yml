@@ -32,13 +32,11 @@ jobs:
             dotnet publish ./BeerLeagueHockey.csproj -c Release /property:Version=$VERSION_NUMBER -o ../app-publish --runtime win-x64
             cd ../app-publish
             zip -r ../app-publish.zip *
-            cd ../app-migrate
 
       - persist_to_workspace: # store the built files into the workspace for other jobs.
           root: ./
           paths:
             - app-publish.zip
-            - app-migrate
 
   terraform-plan:
     docker:
