@@ -32,7 +32,7 @@ jobs:
             dir
 
       - persist_to_workspace: # store the built files into the workspace for other jobs.
-          root: ./
+          root: ../
           paths:
             - app-publish.zip
 
