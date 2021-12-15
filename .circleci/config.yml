@@ -123,7 +123,7 @@ jobs:
             az login --service-principal -u ${AZURE_SP_NAME} -p ${AZURE_SP_PASSWORD} --tenant ${AZURE_TENANT}
             echo "az webapp deployment source config-zip -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --src app-publish.zip"
             echo "abc############################################################"
-            dir
+            ls
             az webapp deployment source config-zip -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --src app-publish.zip
             echo "az webapp start -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging"
             az webapp start -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging
