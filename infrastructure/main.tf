@@ -61,6 +61,7 @@ resource "azurerm_mssql_server" "db" {
   administrator_login          = var.sql-login
   administrator_login_password = var.sql-password
   public_network_access_enabled = true
+  minimum_tls_version = "1.2"
 }
 
 resource "azurerm_mssql_database" "db" {
