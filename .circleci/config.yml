@@ -104,7 +104,7 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            dir
+            ls
 
       - run:
           name: Capture public IP
