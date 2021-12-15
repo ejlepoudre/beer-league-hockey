@@ -37,8 +37,14 @@
 
   </ItemGroup>
   <ItemGroup>
-    
+    <None Update="tools\7za.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="tools\7za.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
+  
   
   
 </Project>
