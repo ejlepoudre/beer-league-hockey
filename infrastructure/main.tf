@@ -117,6 +117,8 @@ resource "azurerm_app_service" "app" {
     always_on = false
     dotnet_framework_version = "v5.0"
     http2_enabled = true
+    remote_debugging_enabled = true
+
   }
 }
 
