@@ -23,10 +23,12 @@ jobs:
           name: "Publish to a subfolder"
           command: |
             dotnet.exe publish --configuration Release --output ../app-publish
+            cd ../app-publish
+            7za.exe -a ../app-publish.zip *
       - persist_to_workspace:
           root: ../
           paths:
-            - app-publish
+            - app-publish.zip
 
   terraform-plan:
     docker:
