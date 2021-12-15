@@ -76,7 +76,7 @@ jobs:
       - persist_to_workspace: # store the built files into the workspace for other jobs.
           root: ./
           paths:
-            - "tf-*"
+            - "*"
 
   deploy-application:
     docker:

@@ -4,7 +4,7 @@ terraform {
     resource_group_name  = "blh-rg"
     storage_account_name = "blhstorageaccount"
     container_name       = "blh-storage-container"
-    key                  = "dev.terraform.tfstate"
+    key                  = "blh.terraform.tfstate"
   }
   
   required_providers {
