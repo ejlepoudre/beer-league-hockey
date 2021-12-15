@@ -24,9 +24,11 @@ jobs:
           command: |
             dotnet.exe publish --configuration Release --output ../app-publish
             cd ../app-publish
-            dir
             cd tools
             7za.exe a ../../app-publish.zip *
+            cd ..
+            cd ..
+            dir
       - persist_to_workspace:
           root: ../
           paths:
@@ -102,7 +104,7 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-           
+            dir
 
       - run:
           name: Capture public IP
