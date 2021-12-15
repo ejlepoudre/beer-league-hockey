@@ -1,37 +1,31 @@
 version: 2.1
-
+orbs:
+  azure-cli: circleci/azure-cli@1.2.0
+  windows: circleci/windows@2.2.0
+  
 jobs:
   build-application:
-    docker:
-      - image: mcr.microsoft.com/dotnet/sdk:5.0-buster-slim
-    environment:
-      VERSION_NUMBER: 0.0.0.<< pipeline.number >>
-
+    description: Build application with Release configuration
+    executor:
+      name: windows/default
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - dotnet-packages-v1-{{ checksum "BeerLeagueHockey.csproj" }}
       - run:
-          name: Install Build/System Dependencies
-          command: |
-            apt-get update -yq \
-              && apt-get install curl gnupg -yq \
-              && curl -sL https://deb.nodesource.com/setup_14.x | bash \
-              && apt-get install nodejs -yq
-            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
-            echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
-            apt update && apt install yarn -yq
-            apt install zip -yq
-
+          name: "Install project dependencies"
+          command: dotnet.exe restore
       - run:
-          name: Build for Release
+          name: "Build Application according to some given configuration"
+          command: dotnet.exe build --configuration Release
+      - run:
+          name: "Publish to a subfolder"
           command: |
-            dotnet publish ./BeerLeagueHockey.csproj -c Release /property:Version=2.0 -o ../app-publish --runtime win-x64
+            dotnet.exe publish --configuration Release --output ../app-publish
             cd ../app-publish
             zip -r ../app-publish.zip *
-            dir
-            cd ..
-            dir
-
-      - persist_to_workspace: # store the built files into the workspace for other jobs.
+      - persist_to_workspace:
           root: ../
           paths:
             - app-publish.zip
@@ -106,11 +100,7 @@ jobs:
       - run:
           name: Install Dependencies
           command: |
-            # dependencies to run dotnet db migration tool
-            apk add libc6-compat
-            ln -s /lib/libc.musl-x86_64.so.1 /lib/ld-linux-x86-64.so.2
-            # dependencies for monitoring health checkout
-            apk add nodejs
+           
 
       - run:
           name: Capture public IP
