@@ -65,7 +65,7 @@ resource "azurerm_mssql_server" "db" {
 }
 
 resource "azurerm_mssql_database" "db" {
-  name           = "beer-league-hockey-db"
+  name           = "BeerLeagueHockey"
   server_id      = azurerm_mssql_server.db.id
   collation      = "SQL_Latin1_General_CP1_CI_AS"
   # license_type   = "LicenseIncluded"
