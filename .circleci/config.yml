@@ -24,8 +24,8 @@ jobs:
           command: |
             dotnet.exe publish --configuration Release --output ../app-publish
             cd ../app-publish
-            cd tools
-            7za.exe a ../../app-publish.zip *
+            
+            /tools/7za.exe a ../app-publish.zip *
             cd ..
             cd ..
             dir
