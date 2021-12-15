@@ -24,7 +24,9 @@ jobs:
           command: |
             dotnet.exe publish --configuration Release --output ../app-publish
             cd ../app-publish
-            ./tools/7za.exe a ../app-publish.zip *
+            dir
+            cd tools
+            7za.exe a ../../app-publish.zip *
       - persist_to_workspace:
           root: ../
           paths:
