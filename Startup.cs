@@ -22,6 +22,7 @@ namespace BeerLeagueHockey
     {
         public Startup(IWebHostEnvironment env)
         {
+            Console.WriteLine("Abc");
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)

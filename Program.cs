@@ -11,6 +11,8 @@ namespace BeerLeagueHockey
     {
         public static void Main(string[] args)
         {
+
+            Console.WriteLine("Abc2");
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -18,7 +20,9 @@ namespace BeerLeagueHockey
                 .UseStartup<Startup>()
                 .Build();
 
+            Console.WriteLine("Abc3");
             host.Run();
+            Console.WriteLine("Abc4");
         }
     }
 }
