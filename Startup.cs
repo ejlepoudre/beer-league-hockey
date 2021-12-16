@@ -48,7 +48,11 @@ namespace BeerLeagueHockey
                 //options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")
                 ));
-                  
+
+            services.AddDbContext<MyDatabaseContext>(options =>
+                //options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")
+                options.UseSqlServer(Configuration.GetConnectionString("MyDbConnection")
+                ));    
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
