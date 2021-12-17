@@ -86,7 +86,7 @@ resource "azurerm_mssql_server_transparent_data_encryption" "db" {
 }
 
 resource "azurerm_mssql_virtual_network_rule" "db" {
-  name      = "tf-db-vnet"
+  name      = "vnet-rule-beer-league-hockey"
   server_id = azurerm_mssql_server.db.id
   subnet_id = azurerm_subnet.vnet.id
 }
@@ -100,8 +100,8 @@ resource "azurerm_app_service_plan" "asp" {
   reserved = false
 
   sku {
-    tier = "Free"
-    size = "F1"
+    tier = "Standard"
+    size = "S1"
   }
 }
 
