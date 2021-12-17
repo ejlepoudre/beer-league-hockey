@@ -1,5 +1,5 @@
 variable "resource_group_name" {
-  default = "blh-tf-rg"
+  default = "rg-beer-league-hockey-app"
 }
 
 variable "location" {

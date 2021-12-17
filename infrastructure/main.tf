@@ -1,10 +1,10 @@
 # Configure the Azure provider
 terraform {
   backend "azurerm" {
-    resource_group_name  = "blh-rg"
-    storage_account_name = "blhstorageaccount"
-    container_name       = "blh-storage-container"
-    key                  = "blh.terraform.tfstate"
+    resource_group_name  = "rg-beer-league-hockey-tfstate"
+    storage_account_name = "strgbeerleaguehockeytfst"
+    container_name       = "container-beer-league-hockey"
+    key                  = "beer-league-hockey.terraform.tfstate"
   }
   
   required_providers {
@@ -29,14 +29,14 @@ resource "azurerm_resource_group" "rg" {
 
 # Virtual Network and subnet
 resource "azurerm_virtual_network" "vnet" {
-  name                = "tf-vnet"
+  name                = "vnet-beer-league-hockey"
   address_space       = ["10.0.0.0/16"]
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 resource "azurerm_subnet" "vnet" {
-  name                 = "tf-subnet"
+  name                 = "subnet-beer-league-hockey"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -54,7 +54,7 @@ resource "azurerm_subnet" "vnet" {
 
 # SQL Database
 resource "azurerm_mssql_server" "db" {
-  name                         = "beer-league-hockey-srv"
+  name                         = "srv-beer-league-hockey"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = var.location
   version                      = "12.0"
@@ -93,20 +93,20 @@ resource "azurerm_mssql_virtual_network_rule" "db" {
 
 # App Service Plan + Slots
 resource "azurerm_app_service_plan" "asp" {
-  name                = "tf-asp"
+  name                = "asp-beer-league-hockey"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   kind = "Windows"
   reserved = false
 
   sku {
-    tier = "Standard"
-    size = "S1"
+    tier = "Free"
+    size = "F1"
   }
 }
 
 resource "azurerm_app_service" "app" {
-  name                = "tf-app-lobex1"
+  name                = "app-beer-league-hockey"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
   app_service_plan_id = azurerm_app_service_plan.asp.id

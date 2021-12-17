@@ -58,6 +58,8 @@ namespace BeerLeagueHockey
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
+            services.AddDatabaseDeveloperPageExceptionFilter();
+            
             services.AddMvc();
 
             // Add application services.
@@ -77,7 +79,9 @@ namespace BeerLeagueHockey
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseDatabaseErrorPage();
+                //app.UseDatabaseErrorPage();
+                app.UseDeveloperExceptionPage();
+                app.UseMigrationsEndPoint();
                 app.UseBrowserLink();
             }
             else

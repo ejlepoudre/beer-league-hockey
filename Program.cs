@@ -27,6 +27,8 @@ namespace BeerLeagueHockey
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
+                    //webBuilder.AddUserSecrets<Startup>();
+
                 });
     }
 }
