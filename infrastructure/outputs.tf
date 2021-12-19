@@ -38,3 +38,6 @@ output "db_database_name" {
   value = azurerm_mssql_database.db.name
 }
 
+output "db2_database_name" {
+  value = azurerm_mssql_database.db2.name
+}

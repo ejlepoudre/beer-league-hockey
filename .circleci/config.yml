@@ -70,6 +70,7 @@ jobs:
             echo $(terraform output app_staging_url) > ../tf-app_staging_url
             echo $(terraform output db_server_name) > ../tf-db_server_name
             echo $(terraform output db_database_name) > ../tf-db_database_name
+            echo $(terraform output db2_database_name) > ../tf-db2_database_name
 
       - persist_to_workspace: # store the built files into the workspace for other jobs.
           root: ./
@@ -99,6 +100,7 @@ jobs:
             echo "export AZURE_APP_STAGING_URL=$app_staging_url" >> $BASH_ENV
             echo "export DB_SERVER_NAME=$db_server_name" >> $BASH_ENV
             echo "export DB_DATABASE_NAME=$db_database_name" >> $BASH_ENV
+            echo "export DB2_DATABASE_NAME=$db2_database_name" >> $BASH_ENV
             source $BASH_ENV
 
       - run:
@@ -130,6 +132,7 @@ jobs:
 
             # TEMP - add/update configs - this should be handled by a config mgmt service or re-usable script tied to config mgmt
             app_conn_string="Server=tcp:${DB_SERVER_NAME}.database.windows.net,1433;Initial Catalog=${DB_DATABASE_NAME};Persist Security Info=False;User ID=${SQL_APP_NAME};Password=${SQL_APP_PASSWORD};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+            app_conn_string_2="Server=tcp:${DB_SERVER_NAME}.database.windows.net,1433;Initial Catalog=${DB2_DATABASE_NAME};Persist Security Info=False;User ID=${SQL_APP_NAME};Password=${SQL_APP_PASSWORD};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
             az webapp config connection-string set -t SQLAzure -g ${AZURE_RG_NAME} -n ${AZURE_APP_NAME} -s staging --settings Database="${app_conn_string}"
 
       - run:

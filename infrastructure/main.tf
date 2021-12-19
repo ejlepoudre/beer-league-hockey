@@ -4,7 +4,7 @@ terraform {
     resource_group_name  = "rg-beer-league-hockey-tfstate"
     storage_account_name = "strgbeerleaguehockeytfst"
     container_name       = "container-beer-league-hockey"
-    key                  = "beer-league-hockey.terraform.tfstate"
+    key                  = "beer-league-hockey.terraform.tfstate2"
   }
   
   required_providers {
@@ -65,6 +65,23 @@ resource "azurerm_mssql_server" "db" {
 }
 
 resource "azurerm_mssql_database" "db" {
+  name           = "IdentityDB"
+  server_id      = azurerm_mssql_server.db.id
+  collation      = "SQL_Latin1_General_CP1_CI_AS"
+  # license_type   = "LicenseIncluded"
+  # max_size_gb    = 4
+  read_scale     = false
+  sku_name       = "Basic"
+  storage_account_type = "GRS"
+  # zone_redundant = true
+
+  threat_detection_policy {
+    state = "Enabled"
+    email_addresses = [var.sql-threat-email]
+  }
+}
+
+resource "azurerm_mssql_database" "db2" {
   name           = "BeerLeagueHockey"
   server_id      = azurerm_mssql_server.db.id
   collation      = "SQL_Latin1_General_CP1_CI_AS"
@@ -80,6 +97,7 @@ resource "azurerm_mssql_database" "db" {
     email_addresses = [var.sql-threat-email]
   }
 }
+
 
 resource "azurerm_mssql_server_transparent_data_encryption" "db" {
   server_id = azurerm_mssql_server.db.id
